@@ -2,18 +2,26 @@ package main
 
 import (
 	"flag"
+	"fmt"
 )
 
-func main() {
-	var debug = flag.Bool("d", false, "If this flag is applied, output debug information.")
-	var configuration = flag.Bool("c", false, "If this flag is applied, open configuration mode.")
-	flag.Parse()
+var isDebug, isConfigure bool
 
-	if *debug {
-		// Register a logger.
+func init() {
+	flag.BoolVar(&isDebug, "d", false, "If this flag is applied, output debug information.")
+	flag.BoolVar(&isConfigure, "c", false, "If this flag is applied, open configuration mode.")
+	flag.Parse()
+}
+
+func main() {
+	fmt.Println("[ScanBadge] Starting ScanBadge client...")
+
+	if isDebug {
+		fmt.Println("[ScanBadge] Running in debug mode...")
+		// TODO: implement a logger (either via API or local - or both).
 	}
 
-	if *configuration {
-		Configure()
+	if isConfigure {
+		configure()
 	}
 }

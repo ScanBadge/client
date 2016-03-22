@@ -1,46 +1,57 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/mewbak/gopass"
+	"github.com/scanbadge/client/utility"
 	"io/ioutil"
-	"os"
 )
 
-type Configuration struct {
-	Url string `json:"url"`
-	Key string `json:"url"`
+type configuration struct {
+	URL        string `json:"url"`
+	DeviceName string `json:"device_name"`
+	DeviceKey  string `json:"device_key"`
 }
 
-func Configure() {
-	// Firstly, collect all required information for configuring the ScanBadge client:
-	// - Url of API
-	// - Authentication private key
-	var config Configuration
-	reader := bufio.NewReader(os.Stdin)
-
+func configure() {
+	var config configuration
 	fmt.Println("Configure ScanBadge Client")
-	fmt.Println("URL of ScanBadge API (leave empty for default value):")
-	config.Url, _ = reader.ReadString('\n')
 
-	if config.Url != "\n" && len(config.Url) <= 8192 {
-		// Use default value
-		config.Url = "https://scanbadge.xyz/api/v1"
+	fmt.Println("ScanBadge API URL:")
+	fmt.Scanln(&config.URL)
+	if config.URL == "" {
+		config.URL = "https://scanbadge.xyz/api/v1"
+		fmt.Println("Using default API url: " + config.URL)
 	}
 
-	fmt.Println("Authentication key for this device:")
-	config.Key, _ = reader.ReadString('\n')
-
-	if config.Key != "\n" && len(config.Key) > 20 && len(config.Key) <= 8192 {
-		// Key must always have a value, and cannot be outside the specified boundaries.
-		panic("Authentication key is required. You can create an authentication key with the API or the front-end.")
+	fmt.Println("Device name:")
+	fmt.Scanln(&config.DeviceName)
+	if config.DeviceName == "" {
+		fmt.Println("Device name is required.")
+		return
 	}
+
+	key := ""
+	if key, err := gopass.GetPass("Device key:\n"); err != nil {
+		if key == "" || len(key) < 20 || len(key) > 8192 {
+			fmt.Println("Device key is required. It must be 20 characters in length and cannot exceed 8192 characters")
+			return
+		}
+
+		fmt.Println(err)
+		return
+	}
+
+	config.DeviceKey = utility.HashPassword(key)
 
 	// We have all required information, write it to a client-config.json file.
 	b, err := json.Marshal(config)
 
-	if err == nil {
-		ioutil.WriteFile("client-config.json", b, 0775)
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
+
+	ioutil.WriteFile("client-config.json", b, 0775)
 }
